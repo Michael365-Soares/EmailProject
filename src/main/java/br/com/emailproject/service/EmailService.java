@@ -6,13 +6,15 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.ejb.Stateless;
-import javax.mail.Address;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import br.com.emailproject.model.Email;
 import br.com.emailproject.util.LogUtil;
@@ -21,6 +23,7 @@ import br.com.emailproject.util.LogUtil;
 public class EmailService extends Thread {
     
 	private List<Email> emails=new ArrayList<>();
+	public static final String HEADER_CONTEXT="text/html; charset=UTF-8";
 	
 	public void enviarEmail(Email email) {
 		emails.add(email);
@@ -63,7 +66,21 @@ public class EmailService extends Thread {
                        emailsLocal.add(new InternetAddress(e));
 				   }
 				   message.addRecipients(Message.RecipientType.TO,emailsLocal.toArray(new InternetAddress[0]));
+			   }else {
+				   InternetAddress para=new InternetAddress(email.getDestinatario());
+				   message.addRecipient(Message.RecipientType.TO, para);
 			   }
+			   
+			   message.setSubject(email.getAssunto());
+			   MimeBodyPart textPart=new MimeBodyPart();
+			   textPart.setHeader("Content-Type",HEADER_CONTEXT);
+			   textPart.setContent(email.getCorpoDoEmail(),HEADER_CONTEXT);
+			   
+			   Multipart mp=new MimeMultipart();
+			   mp.addBodyPart(textPart);
+			   message.setContent(mp);
+			   
+			   Transport.send(message);
 			   
 			}catch (MessagingException | UnsupportedEncodingException e) {
 				LogUtil.getLogger(EmailService.class).error("Erro ao enviar e-mail! "+e.getMessage());
